@@ -1,10 +1,11 @@
 "use server";
 
-// Trusted, service-role-backed handlers for lead routing. Not yet wired to
-// any route -- built for a future authenticated staff/partner dashboard,
-// which must check the caller's session/org/role before invoking these.
+// Session-authenticated handlers for lead routing. RLS
+// (partner_routes_staff_all / partner_routes_partner_*) enforces who may
+// assign, update, or see routes -- this file just runs queries as the
+// caller.
 
-import { getSupabaseServiceClient } from "@/lib/supabase/server";
+import { getSupabaseServerSessionClient } from "@/lib/supabase/server-session";
 
 const PARTNER_ROUTE_STATUSES = ["assigned", "contacted", "closed"] as const;
 export type PartnerRouteStatus = (typeof PARTNER_ROUTE_STATUSES)[number];
@@ -18,6 +19,11 @@ export interface PartnerRoute {
   routedAt: string;
 }
 
+export interface OrgPartner {
+  id: string;
+  email: string;
+}
+
 function mapRoute(row: Record<string, unknown>): PartnerRoute {
   return {
     id: row.id as string,
@@ -29,6 +35,17 @@ function mapRoute(row: Record<string, unknown>): PartnerRoute {
   };
 }
 
+export async function listOrgPartners(): Promise<OrgPartner[]> {
+  const supabase = await getSupabaseServerSessionClient();
+  const { data, error } = await supabase.from("users").select("id, email").eq("role", "partner");
+
+  if (error || !data) {
+    console.error("[partner-routes] failed to list org partners", error);
+    return [];
+  }
+  return data.map((row) => ({ id: row.id as string, email: row.email as string }));
+}
+
 export async function assignPartnerRoute({
   leadId,
   partnerId,
@@ -38,7 +55,7 @@ export async function assignPartnerRoute({
   partnerId: string;
   notes?: string;
 }): Promise<{ ok: true; route: PartnerRoute } | { ok: false; error: string }> {
-  const supabase = getSupabaseServiceClient();
+  const supabase = await getSupabaseServerSessionClient();
   const { data, error } = await supabase
     .from("partner_routes")
     .insert({ lead_id: leadId, partner_id: partnerId, notes: notes ?? null })
@@ -68,7 +85,7 @@ export async function updatePartnerRouteStatus({
   const update: Record<string, unknown> = { status };
   if (notes !== undefined) update.notes = notes;
 
-  const supabase = getSupabaseServiceClient();
+  const supabase = await getSupabaseServerSessionClient();
   const { error } = await supabase.from("partner_routes").update(update).eq("id", routeId);
 
   if (error) {
@@ -79,7 +96,7 @@ export async function updatePartnerRouteStatus({
 }
 
 export async function listRoutesForLead(leadId: string): Promise<PartnerRoute[]> {
-  const supabase = getSupabaseServiceClient();
+  const supabase = await getSupabaseServerSessionClient();
   const { data, error } = await supabase
     .from("partner_routes")
     .select()
@@ -88,21 +105,6 @@ export async function listRoutesForLead(leadId: string): Promise<PartnerRoute[]>
 
   if (error || !data) {
     console.error("[partner-routes] failed to list routes for lead", error);
-    return [];
-  }
-  return data.map(mapRoute);
-}
-
-export async function listRoutesForPartner(partnerId: string): Promise<PartnerRoute[]> {
-  const supabase = getSupabaseServiceClient();
-  const { data, error } = await supabase
-    .from("partner_routes")
-    .select()
-    .eq("partner_id", partnerId)
-    .order("routed_at", { ascending: false });
-
-  if (error || !data) {
-    console.error("[partner-routes] failed to list routes for partner", error);
     return [];
   }
   return data.map(mapRoute);

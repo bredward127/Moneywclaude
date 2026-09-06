@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { getSupabaseServiceClient, PROPERTY_PHOTOS_BUCKET } from "@/lib/supabase/server";
 import { isPhotoCategory } from "@/lib/photo-categories";
 import { MAX_FILE_SIZE_BYTES } from "@/lib/photo-processing";
+import { assertLeadAccessible } from "@/lib/dashboard/access";
 
 const SIGNED_VIEW_URL_TTL_SECONDS = 15 * 60; // 15 minutes, per spec
 const UPLOAD_LINK_VALIDITY_DAYS = 14;
@@ -176,6 +177,18 @@ export async function createUploadLink(
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   return { ok: true, url: `${baseUrl}/upload-photos/${token}` };
+}
+
+/**
+ * Dashboard-facing entry point for viewing a lead's photos: unlike
+ * listLeadPhotos (used by the public upload flow, which trusts possession
+ * of the leadId itself), this checks the caller's own session against RLS
+ * first, so only staff/partners actually permitted to see this lead can
+ * reach the service-role-backed signed URL generation.
+ */
+export async function listLeadPhotosForStaff(leadId: string): Promise<LeadPhoto[]> {
+  if (!(await assertLeadAccessible(leadId))) return [];
+  return listLeadPhotos(leadId);
 }
 
 export async function validateUploadToken(
