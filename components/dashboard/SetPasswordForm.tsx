@@ -1,33 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { getSupabaseBrowserSessionClient } from "@/lib/supabase/browser-session";
+import { setNewPassword } from "@/app/actions/onboarding";
 
 const darkInputClass =
   "w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 text-white placeholder:text-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30";
 
-export function LoginForm({ nextPath }: { nextPath: string }) {
+/** Shared by first-time onboarding and password-reset confirmation -- both are "set a password for the already-verified session in front of you," just with a different next step. */
+export function SetPasswordForm({ nextPath }: { nextPath: string }) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (password !== confirmPassword) {
+      setError("Passwords don't match.");
+      return;
+    }
     setIsSubmitting(true);
     setError(null);
 
-    const supabase = getSupabaseBrowserSessionClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (signInError) {
+    const result = await setNewPassword({ password });
+    if (!result.ok) {
       setIsSubmitting(false);
-      setError("Incorrect email or password.");
+      setError(result.error);
       return;
     }
 
@@ -38,36 +40,34 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-300">
-          Email
+        <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-300">
+          New password
         </label>
-        <input
-          id="email"
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className={darkInputClass}
-          autoComplete="username"
-        />
-      </div>
-      <div>
-        <div className="mb-1.5 flex items-center justify-between">
-          <label htmlFor="password" className="block text-sm font-medium text-slate-300">
-            Password
-          </label>
-          <Link href="/dashboard/reset-password/request" className="text-xs font-medium text-blue-400 hover:text-blue-300">
-            Forgot your password?
-          </Link>
-        </div>
         <input
           id="password"
           type="password"
           required
+          minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           className={darkInputClass}
-          autoComplete="current-password"
+          autoComplete="new-password"
+        />
+        <p className="mt-1.5 text-xs text-slate-500">At least 8 characters.</p>
+      </div>
+      <div>
+        <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-slate-300">
+          Confirm password
+        </label>
+        <input
+          id="confirmPassword"
+          type="password"
+          required
+          minLength={8}
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          className={darkInputClass}
+          autoComplete="new-password"
         />
       </div>
 
@@ -79,7 +79,7 @@ export function LoginForm({ nextPath }: { nextPath: string }) {
       )}
 
       <Button type="submit" isLoading={isSubmitting} fullWidth>
-        Sign in
+        Continue
       </Button>
     </form>
   );
