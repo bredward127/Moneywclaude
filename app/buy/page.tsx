@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { TrendingUp, Clock, UserCheck, Building2 } from "lucide-react";
 import { Container } from "@/components/ui/Container";
-import { BuyerIntakeForm } from "@/components/forms/BuyerIntakeForm";
+import { PropertyIntakeWizard } from "@/components/wizard/PropertyIntakeWizard";
 import { VideoPlayer } from "@/components/video/VideoPlayer";
 import { BUYER_VIDEO } from "@/lib/videos";
 
@@ -82,7 +82,7 @@ export default function BuyPage() {
             </div>
 
             <div className="lg:col-span-3">
-              <BuyerIntakeForm />
+              <PropertyIntakeWizard mode="buyer" />
             </div>
           </div>
         </Container>

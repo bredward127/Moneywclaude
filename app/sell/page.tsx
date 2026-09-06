@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ShieldCheck, Clock, UserCheck, MapPin } from "lucide-react";
 import { Container } from "@/components/ui/Container";
-import { SellerIntakeForm } from "@/components/forms/SellerIntakeForm";
+import { PropertyIntakeWizard } from "@/components/wizard/PropertyIntakeWizard";
 import { VideoPlayer } from "@/components/video/VideoPlayer";
 import { SELLER_VIDEO } from "@/lib/videos";
 
@@ -82,7 +82,7 @@ export default function SellPage() {
             </div>
 
             <div className="lg:col-span-3">
-              <SellerIntakeForm />
+              <PropertyIntakeWizard mode="seller" />
             </div>
           </div>
         </Container>

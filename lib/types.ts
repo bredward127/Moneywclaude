@@ -7,31 +7,34 @@ export interface ContactInfo {
 
 export interface SellerLead {
   type: "seller";
-  address: string;
-  city: string;
-  state: string;
-  zip: string;
+  addressOrCityZip: string;
   propertyType: string;
-  timeline: string;
+  occupancy: string;
   condition: string;
-  estimatedValue: string;
-  notes: string;
+  timeline: string;
+  nextStep: string;
+  preferPrivateDiscussion: boolean;
+  repairDetails: string;
+  mortgageOrLiens: string;
+  reasonForSelling: string;
   consent: boolean;
   contact: ContactInfo;
 }
 
 export interface BuyerLead {
   type: "buyer";
+  goal: string;
+  targetLocation: string;
   propertyTypes: string[];
-  areas: string;
   bedrooms: string;
+  bathrooms: string;
+  minSquareFootage: string;
   budgetMin: string;
   budgetMax: string;
-  financing: string;
-  timeline: string;
-  isInvestor: boolean;
-  investorNotes: string;
-  notes: string;
+  purchaseTimeline: string;
+  fundingPath: string;
+  investorStrategy: string;
+  propertyAlertOptIn: boolean;
   consent: boolean;
   contact: ContactInfo;
 }
