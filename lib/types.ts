@@ -18,6 +18,7 @@ export interface SellerLead {
   mortgageOrLiens: string;
   reasonForSelling: string;
   consent: boolean;
+  marketingOptIn: boolean;
   contact: ContactInfo;
 }
 
@@ -36,6 +37,7 @@ export interface BuyerLead {
   investorStrategy: string;
   propertyAlertOptIn: boolean;
   consent: boolean;
+  marketingOptIn: boolean;
   contact: ContactInfo;
 }
 

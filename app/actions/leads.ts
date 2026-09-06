@@ -1,6 +1,7 @@
 "use server";
 
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
+import { getDefaultOrgId } from "@/lib/org";
 import type { SellerLead } from "@/lib/types";
 
 type SellerData = Omit<SellerLead, "type">;
@@ -10,17 +11,30 @@ export async function createDraftSellerLead(
 ): Promise<{ leadId: string } | { error: string }> {
   const supabase = getSupabaseServiceClient();
 
+  const propertyDetails = {
+    addressOrCityZip: data.addressOrCityZip,
+    propertyType: data.propertyType,
+    occupancy: data.occupancy,
+    condition: data.condition,
+    timeline: data.timeline,
+    nextStep: data.nextStep,
+    preferPrivateDiscussion: data.preferPrivateDiscussion,
+    repairDetails: data.repairDetails,
+    mortgageOrLiens: data.mortgageOrLiens,
+    reasonForSelling: data.reasonForSelling,
+  };
+
   const { data: row, error } = await supabase
     .from("leads")
     .insert({
+      org_id: getDefaultOrgId(),
       type: "seller",
       status: "draft",
       contact_name: data.contact.fullName,
-      contact_email: data.contact.email,
-      contact_phone: data.contact.phone,
-      contact_preferred_method: data.contact.preferredContact,
-      consent: data.consent,
-      payload: data,
+      email: data.contact.email,
+      phone: data.contact.phone,
+      contact_pref: data.contact.preferredContact,
+      property_details: propertyDetails,
     })
     .select("id")
     .single();

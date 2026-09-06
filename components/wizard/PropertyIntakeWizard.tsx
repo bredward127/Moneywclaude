@@ -76,6 +76,7 @@ export function PropertyIntakeWizard({ mode }: { mode: "seller" | "buyer" }) {
   const isReview = currentStep >= steps.length;
   const activeStep = isReview ? null : steps[currentStep];
   const consent = mode === "seller" ? sellerData.consent : buyerData.consent;
+  const marketingOptIn = mode === "seller" ? sellerData.marketingOptIn : buyerData.marketingOptIn;
 
   const reviewVoicePrompt =
     "Here's a summary of what you told us. Review it, and submit when you're ready.";
@@ -180,6 +181,12 @@ export function PropertyIntakeWizard({ mode }: { mode: "seller" | "buyer" }) {
                 consent={consent}
                 onConsentChange={(v) =>
                   mode === "seller" ? updateSeller("consent", v) : updateBuyer("consent", v)
+                }
+                marketingOptIn={marketingOptIn}
+                onMarketingOptInChange={(v) =>
+                  mode === "seller"
+                    ? updateSeller("marketingOptIn", v)
+                    : updateBuyer("marketingOptIn", v)
                 }
                 consentLabel={
                   mode === "seller"

@@ -78,7 +78,7 @@ export async function confirmUpload({
       category,
       original_filename: originalFilename,
       mime_type: mimeType,
-      file_size: fileSize,
+      size_bytes: fileSize,
     })
     .select("id")
     .single();

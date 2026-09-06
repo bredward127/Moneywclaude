@@ -11,6 +11,8 @@ export function ReviewStep({
   consent,
   onConsentChange,
   consentLabel,
+  marketingOptIn,
+  onMarketingOptInChange,
   status,
   onSubmit,
 }: {
@@ -19,6 +21,8 @@ export function ReviewStep({
   consent: boolean;
   onConsentChange: (checked: boolean) => void;
   consentLabel: string;
+  marketingOptIn: boolean;
+  onMarketingOptInChange: (checked: boolean) => void;
   status: "idle" | "submitting" | "error";
   onSubmit: () => void;
 }) {
@@ -56,6 +60,8 @@ export function ReviewStep({
         checked={consent}
         onChange={onConsentChange}
         consentLabel={consentLabel}
+        marketingOptIn={marketingOptIn}
+        onMarketingOptInChange={onMarketingOptInChange}
       />
 
       {status === "error" && (

@@ -8,10 +8,14 @@ export function DataConsentSection({
   checked,
   onChange,
   consentLabel,
+  marketingOptIn,
+  onMarketingOptInChange,
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
   consentLabel: string;
+  marketingOptIn: boolean;
+  onMarketingOptInChange: (checked: boolean) => void;
 }) {
   return (
     <div className="space-y-4 border-t border-slate-100 pt-6">
@@ -39,6 +43,18 @@ export function DataConsentSection({
             Privacy Policy
           </Link>{" "}
           and consent to being contacted.
+        </span>
+      </label>
+
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 hover:border-blue-300">
+        <input
+          type="checkbox"
+          checked={marketingOptIn}
+          onChange={(e) => onMarketingOptInChange(e.target.checked)}
+          className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+        />
+        <span className="text-sm text-slate-700">
+          Optional: it&apos;s okay to send me promotional updates and offers.
         </span>
       </label>
     </div>

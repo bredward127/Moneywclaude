@@ -35,6 +35,7 @@ export const INITIAL_SELLER_DATA: SellerData = {
   mortgageOrLiens: "",
   reasonForSelling: "",
   consent: false,
+  marketingOptIn: false,
   contact: { fullName: "", email: "", phone: "", preferredContact: "" },
 };
 

@@ -22,6 +22,7 @@ export const INITIAL_BUYER_DATA: BuyerData = {
   investorStrategy: "",
   propertyAlertOptIn: false,
   consent: false,
+  marketingOptIn: false,
   contact: { fullName: "", email: "", phone: "", preferredContact: "" },
 };
 
