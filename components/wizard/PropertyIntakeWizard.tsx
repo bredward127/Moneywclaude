@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ProgressSteps } from "@/components/forms/ProgressSteps";
@@ -12,7 +12,9 @@ import {
   buildSellerSteps,
   buildSellerReviewSections,
   INITIAL_SELLER_DATA,
+  INITIAL_PHOTO_STATE,
   type SellerData,
+  type PhotoStepState,
 } from "./sellerSteps";
 import {
   buildBuyerSteps,
@@ -33,6 +35,7 @@ function idToLabel(id: string): string {
 export function PropertyIntakeWizard({ mode }: { mode: "seller" | "buyer" }) {
   const [sellerData, setSellerData] = useState<SellerData>(INITIAL_SELLER_DATA);
   const [buyerData, setBuyerData] = useState<BuyerData>(INITIAL_BUYER_DATA);
+  const [photoState, setPhotoState] = useState<PhotoStepState>(INITIAL_PHOTO_STATE);
   const [currentStep, setCurrentStep] = useState(0);
   const [visitId, setVisitId] = useState(0);
   const [cameFromReview, setCameFromReview] = useState(false);
@@ -48,9 +51,26 @@ export function PropertyIntakeWizard({ mode }: { mode: "seller" | "buyer" }) {
     setBuyerData((prev) => ({ ...prev, [key]: value }));
   }
 
+  const handlePhotoLeadCreated = useCallback((leadId: string) => {
+    setPhotoState((prev) => (prev.leadId === leadId ? prev : { ...prev, leadId }));
+  }, []);
+  const handlePhotoChoiceChange = useCallback((choice: "now" | "later") => {
+    setPhotoState((prev) => (prev.choice === choice ? prev : { ...prev, choice }));
+  }, []);
+  const handlePhotoCountChange = useCallback((photoCount: number) => {
+    setPhotoState((prev) => (prev.photoCount === photoCount ? prev : { ...prev, photoCount }));
+  }, []);
+
   const steps =
     mode === "seller"
-      ? buildSellerSteps({ data: sellerData, update: updateSeller })
+      ? buildSellerSteps({
+          data: sellerData,
+          update: updateSeller,
+          photoState,
+          onPhotoLeadCreated: handlePhotoLeadCreated,
+          onPhotoChoiceChange: handlePhotoChoiceChange,
+          onPhotoCountChange: handlePhotoCountChange,
+        })
       : buildBuyerSteps({ data: buyerData, update: updateBuyer });
 
   const isReview = currentStep >= steps.length;
@@ -100,7 +120,9 @@ export function PropertyIntakeWizard({ mode }: { mode: "seller" | "buyer" }) {
     setStatus("submitting");
     try {
       const payload =
-        mode === "seller" ? { type: "seller", ...sellerData } : { type: "buyer", ...buyerData };
+        mode === "seller"
+          ? { type: "seller", leadId: photoState.leadId, ...sellerData }
+          : { type: "buyer", ...buyerData };
       const res = await fetch("/api/intake", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -151,7 +173,7 @@ export function PropertyIntakeWizard({ mode }: { mode: "seller" | "buyer" }) {
               <ReviewStep
                 sections={
                   mode === "seller"
-                    ? buildSellerReviewSections(sellerData)
+                    ? buildSellerReviewSections(sellerData, photoState)
                     : buildBuyerReviewSections(buyerData)
                 }
                 onEdit={handleEdit}

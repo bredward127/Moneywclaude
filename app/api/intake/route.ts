@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getSupabaseServiceClient } from "@/lib/supabase/server";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -38,6 +39,36 @@ export async function POST(request: Request) {
         { ok: false, error: "Consent to be contacted is required." },
         { status: 400 }
       );
+    }
+
+    if (body.type === "seller") {
+      const { leadId, ...payload } = body as Record<string, unknown> & { leadId?: unknown };
+      const supabase = getSupabaseServiceClient();
+      const row = {
+        type: "seller",
+        status: "submitted",
+        contact_name: fullName,
+        contact_email: email,
+        contact_phone: phone,
+        contact_preferred_method: asString(contact.preferredContact),
+        consent: true,
+        payload,
+      };
+
+      const { error } =
+        typeof leadId === "string" && leadId
+          ? await supabase.from("leads").update(row).eq("id", leadId).eq("type", "seller")
+          : await supabase.from("leads").insert(row);
+
+      if (error) {
+        console.error("[intake] failed to persist seller lead", error);
+        return NextResponse.json(
+          { ok: false, error: "Could not save your submission. Please try again." },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({ ok: true });
     }
   } else if (body.type === "contact-preferences") {
     const email = asString(body.email);

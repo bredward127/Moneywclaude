@@ -2,11 +2,26 @@ import { Field } from "@/components/forms/Field";
 import { ChoiceGroup, type ChoiceOption } from "@/components/forms/ChoiceGroup";
 import { VoiceTextarea } from "@/components/forms/VoiceTextarea";
 import { inputClass } from "@/components/forms/styles";
+import { PhotoUploadStep } from "@/components/photos/PhotoUploadStep";
 import type { SellerLead } from "@/lib/types";
 import type { ReviewSection, WizardStep } from "./types";
 import { choiceStep, labelFor } from "./stepHelpers";
 
 export type SellerData = Omit<SellerLead, "type">;
+
+export type PhotoChoice = "now" | "later" | null;
+
+export interface PhotoStepState {
+  leadId: string | null;
+  choice: PhotoChoice;
+  photoCount: number;
+}
+
+export const INITIAL_PHOTO_STATE: PhotoStepState = {
+  leadId: null,
+  choice: null,
+  photoCount: 0,
+};
 
 export const INITIAL_SELLER_DATA: SellerData = {
   addressOrCityZip: "",
@@ -68,9 +83,17 @@ const CONTACT_METHODS: ChoiceOption[] = [
 export function buildSellerSteps({
   data,
   update,
+  photoState,
+  onPhotoLeadCreated,
+  onPhotoChoiceChange,
+  onPhotoCountChange,
 }: {
   data: SellerData;
   update: <K extends keyof SellerData>(key: K, value: SellerData[K]) => void;
+  photoState: PhotoStepState;
+  onPhotoLeadCreated: (leadId: string) => void;
+  onPhotoChoiceChange: (choice: "now" | "later") => void;
+  onPhotoCountChange: (count: number) => void;
 }): WizardStep[] {
   return [
     {
@@ -247,10 +270,39 @@ export function buildSellerSteps({
         </div>
       ),
     },
+    {
+      id: "photos",
+      title: "Add photos of your property",
+      subtitle: "Optional — add a few now, or get a secure link to add them whenever works for you.",
+      voicePrompt:
+        "Would you like to add property photos now, or get a secure link to add them later? This step is optional.",
+      allowVoiceInput: false,
+      canProceed: true,
+      content: (
+        <PhotoUploadStep
+          leadId={photoState.leadId}
+          choice={photoState.choice}
+          sellerData={data}
+          onLeadCreated={onPhotoLeadCreated}
+          onChoiceChange={onPhotoChoiceChange}
+          onPhotoCountChange={onPhotoCountChange}
+        />
+      ),
+    },
   ];
 }
 
-export function buildSellerReviewSections(data: SellerData): ReviewSection[] {
+export function buildSellerReviewSections(
+  data: SellerData,
+  photoState: PhotoStepState
+): ReviewSection[] {
+  const photoSummary =
+    photoState.choice === "now"
+      ? `${photoState.photoCount} photo${photoState.photoCount === 1 ? "" : "s"} added`
+      : photoState.choice === "later"
+        ? "Secure upload link sent"
+        : "Not added yet";
+
   return [
     {
       title: "Property",
@@ -302,6 +354,10 @@ export function buildSellerReviewSections(data: SellerData): ReviewSection[] {
           stepIndex: 7,
         },
       ],
+    },
+    {
+      title: "Photos",
+      items: [{ label: "Property photos", value: photoSummary, stepIndex: 8 }],
     },
   ];
 }
