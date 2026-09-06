@@ -7,6 +7,7 @@ import { ChoiceGroup, type ChoiceOption } from "./ChoiceGroup";
 import { VoiceTextarea } from "./VoiceTextarea";
 import { ProgressSteps } from "./ProgressSteps";
 import { SuccessPanel } from "./SuccessPanel";
+import { DataConsentSection } from "./DataConsentSection";
 import { Button } from "@/components/ui/Button";
 import { inputClass } from "./styles";
 import type { SellerLead } from "@/lib/types";
@@ -55,6 +56,7 @@ const INITIAL_STATE: FormState = {
   condition: "",
   estimatedValue: "",
   notes: "",
+  consent: false,
   contact: { fullName: "", email: "", phone: "", preferredContact: "" },
 };
 
@@ -76,7 +78,8 @@ export function SellerIntakeForm() {
   const canProceedFromStep1 = form.timeline !== "" && form.condition !== "";
   const canSubmit =
     form.contact.fullName.trim() !== "" &&
-    (form.contact.email.trim() !== "" || form.contact.phone.trim() !== "");
+    (form.contact.email.trim() !== "" || form.contact.phone.trim() !== "") &&
+    form.consent;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -239,6 +242,11 @@ export function SellerIntakeForm() {
                 onChange={(v) => updateContact("preferredContact", v[0] ?? "")}
               />
             </Field>
+            <DataConsentSection
+              checked={form.consent}
+              onChange={(v) => update("consent", v)}
+              consentLabel="I understand my property details will be reviewed by a real person before anyone reaches out."
+            />
           </>
         )}
       </div>

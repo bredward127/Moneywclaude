@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { TrendingUp, Clock, UserCheck, Building2 } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { BuyerIntakeForm } from "@/components/forms/BuyerIntakeForm";
+import { VideoPlayer } from "@/components/video/VideoPlayer";
+import { BUYER_VIDEO } from "@/lib/videos";
 
 export const metadata: Metadata = {
   title: "Buyer Intake | Property Intake & Resource Center",
@@ -57,7 +59,12 @@ export default function BuyPage() {
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-5">
             <div className="lg:col-span-2">
               <div className="lg:sticky lg:top-24">
-                <h2 className="text-xl font-bold text-slate-900">Why share your criteria here?</h2>
+                <div className="mx-auto max-w-[280px] sm:max-w-xs lg:mx-0">
+                  <VideoPlayer {...BUYER_VIDEO} />
+                </div>
+                <h2 className="mt-8 text-xl font-bold text-slate-900">
+                  Why share your criteria here?
+                </h2>
                 <ul className="mt-6 space-y-6">
                   {REASONS.map(({ icon: Icon, title, description }) => (
                     <li key={title} className="flex gap-4">

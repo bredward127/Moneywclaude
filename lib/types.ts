@@ -16,6 +16,7 @@ export interface SellerLead {
   condition: string;
   estimatedValue: string;
   notes: string;
+  consent: boolean;
   contact: ContactInfo;
 }
 
@@ -31,6 +32,7 @@ export interface BuyerLead {
   isInvestor: boolean;
   investorNotes: string;
   notes: string;
+  consent: boolean;
   contact: ContactInfo;
 }
 

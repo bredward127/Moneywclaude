@@ -7,6 +7,7 @@ import { ChoiceGroup, type ChoiceOption } from "./ChoiceGroup";
 import { VoiceTextarea } from "./VoiceTextarea";
 import { ProgressSteps } from "./ProgressSteps";
 import { SuccessPanel } from "./SuccessPanel";
+import { DataConsentSection } from "./DataConsentSection";
 import { Button } from "@/components/ui/Button";
 import { inputClass } from "./styles";
 import type { BuyerLead } from "@/lib/types";
@@ -62,6 +63,7 @@ const INITIAL_STATE: FormState = {
   isInvestor: false,
   investorNotes: "",
   notes: "",
+  consent: false,
   contact: { fullName: "", email: "", phone: "", preferredContact: "" },
 };
 
@@ -82,7 +84,8 @@ export function BuyerIntakeForm() {
   const canProceedFromStep1 = form.financing !== "" && form.timeline !== "";
   const canSubmit =
     form.contact.fullName.trim() !== "" &&
-    (form.contact.email.trim() !== "" || form.contact.phone.trim() !== "");
+    (form.contact.email.trim() !== "" || form.contact.phone.trim() !== "") &&
+    form.consent;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -270,6 +273,11 @@ export function BuyerIntakeForm() {
                 onChange={(v) => updateContact("preferredContact", v[0] ?? "")}
               />
             </Field>
+            <DataConsentSection
+              checked={form.consent}
+              onChange={(v) => update("consent", v)}
+              consentLabel="I understand my buying criteria will be reviewed by a real person before anyone reaches out."
+            />
           </>
         )}
       </div>

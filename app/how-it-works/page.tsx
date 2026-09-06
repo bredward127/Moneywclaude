@@ -6,6 +6,8 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { LinkButton } from "@/components/ui/Button";
 import { ProcessTimeline } from "@/components/how-it-works/ProcessTimeline";
 import { FaqAccordion } from "@/components/how-it-works/FaqAccordion";
+import { VideoPlayer } from "@/components/video/VideoPlayer";
+import { DATA_MANAGEMENT_VIDEO } from "@/lib/videos";
 
 export const metadata: Metadata = {
   title: "How It Works | Property Intake & Resource Center",
@@ -75,11 +77,17 @@ export default function HowItWorksPage() {
 
       <section className="bg-slate-50 py-16 sm:py-24">
         <Container>
-          <SectionHeading
-            eyebrow="Data privacy"
-            title="Your information, on your terms"
-            description="We built this around one rule: nothing happens with your details until a person has looked at them."
-          />
+          <div className="mx-auto grid max-w-4xl grid-cols-1 items-center gap-10 sm:grid-cols-[200px_1fr]">
+            <div className="mx-auto w-full max-w-[200px] sm:mx-0">
+              <VideoPlayer {...DATA_MANAGEMENT_VIDEO} />
+            </div>
+            <SectionHeading
+              align="left"
+              eyebrow="Data privacy"
+              title="Your information, on your terms"
+              description="We built this around one rule: nothing happens with your details until a person has looked at them."
+            />
+          </div>
 
           <div className="mx-auto mt-14 grid max-w-4xl grid-cols-1 gap-8 sm:grid-cols-2">
             {PRIVACY_POINTS.map(({ icon: Icon, title, description, href, linkLabel }) => (

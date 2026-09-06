@@ -32,6 +32,13 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+
+    if (body.consent !== true) {
+      return NextResponse.json(
+        { ok: false, error: "Consent to be contacted is required." },
+        { status: 400 }
+      );
+    }
   } else if (body.type === "contact-preferences") {
     const email = asString(body.email);
     const phone = asString(body.phone);
