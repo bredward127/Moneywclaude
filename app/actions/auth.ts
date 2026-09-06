@@ -3,7 +3,6 @@
 import { redirect } from "next/navigation";
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
 import { getSupabaseServerSessionClient } from "@/lib/supabase/server-session";
-import { getCurrentStaffProfile } from "@/lib/dashboard/auth";
 import { getDefaultOrgId } from "@/lib/org";
 
 export async function isSetupNeeded(): Promise<boolean> {
@@ -87,55 +86,6 @@ export async function bootstrapFirstAdmin({
   } catch (err) {
     console.error("[auth] bootstrapFirstAdmin threw", err);
     return { ok: false, error: "Could not verify setup state. Please try again." };
-  }
-}
-
-export async function inviteTeamMember({
-  email,
-  password,
-  role,
-}: {
-  email: string;
-  password: string;
-  role: "admin" | "reviewer" | "acquisitions" | "partner";
-}): Promise<{ ok: true } | { ok: false; error: string }> {
-  const me = await getCurrentStaffProfile();
-  if (!me || me.role !== "admin") {
-    return { ok: false, error: "Only admins can add teammates." };
-  }
-  if (!email.trim() || password.length < 8) {
-    return { ok: false, error: "Enter an email and a password of at least 8 characters." };
-  }
-
-  try {
-    const supabase = getSupabaseServiceClient();
-
-    const { data: created, error: createError } = await supabase.auth.admin.createUser({
-      email: email.trim(),
-      password,
-      email_confirm: true,
-    });
-    if (createError || !created.user) {
-      console.error("[auth] failed to create teammate auth user", createError);
-      return { ok: false, error: createError?.message ?? "Could not create the account." };
-    }
-
-    const { error: insertError } = await supabase.from("users").insert({
-      id: created.user.id,
-      org_id: me.orgId,
-      email: email.trim(),
-      role,
-    });
-    if (insertError) {
-      console.error("[auth] failed to provision teammate profile", insertError);
-      await supabase.auth.admin.deleteUser(created.user.id);
-      return { ok: false, error: "Could not finish adding this teammate. Please try again." };
-    }
-
-    return { ok: true };
-  } catch (err) {
-    console.error("[auth] inviteTeamMember threw", err);
-    return { ok: false, error: "Could not add this teammate. Please try again." };
   }
 }
 

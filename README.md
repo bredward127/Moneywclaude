@@ -101,10 +101,36 @@ one):
 The schema is intentionally locked down: every table has RLS enabled, and
 the only tables with any policies at all (`leads`, `lead_media`,
 `consent_records`, `partner_routes`, `contract_packets`, `users`,
-`organizations`) grant access exclusively to authenticated staff/partner
-sessions, scoped to their own organization. There is no anon/public policy
-on any table — all public writes go through server-side, Zod-validated
-Server Actions and API routes using the service role key.
+`organizations`, `teams`, `team_members`, `team_customers`, `lead_notes`)
+grant access exclusively to authenticated staff/partner sessions, scoped to
+their own organization. There is no anon/public policy on any table — all
+public writes go through server-side, Zod-validated Server Actions and API
+routes using the service role key.
+
+### Required: email templates for invites and password resets
+
+Every new account is added by email invite, and password resets are
+self-serve — both rely on Supabase Auth emailing a link back into this app
+rather than to Supabase's own hosted confirmation page. This needs one manual
+change per project, since it can't be scripted through a migration:
+
+1. In the Supabase dashboard, go to **Authentication → Email Templates**.
+2. Edit the **Invite user** template: replace `{{ .ConfirmationURL }}` with
+   `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite`.
+3. Edit the **Reset password** template the same way, using `type=recovery`
+   instead of `type=invite`.
+4. Set **Authentication → URL Configuration → Site URL** to your deployed
+   URL (matching `NEXT_PUBLIC_SITE_URL`) so `{{ .SiteURL }}` resolves correctly.
+
+Without this, clicking an invite or reset link authenticates against
+Supabase's own domain and never reaches this app's session — the invitee
+or requester will see Supabase's default page instead of the set-password
+step.
+
+Supabase's own built-in email sender is low-volume and meant for
+development. For reliable delivery at any real volume, configure a
+production SMTP provider (Resend, Postmark, SES, etc.) under
+**Authentication → Settings → SMTP Settings** before inviting real users.
 
 ## Deploying: GitHub → Vercel
 
@@ -129,12 +155,15 @@ Server Actions and API routes using the service role key.
      [Voice intake](#voice-intake-rule-based-matching--optional-ai) above)
 5. **Deploy.** Vercel builds and deploys automatically on every push to
    your production branch from here on.
-6. **Create the first dashboard admin account**: once deployed, visit
+6. **Create the platform owner account**: once deployed, visit
    `https://your-app.vercel.app/dashboard/setup`. This page only works
-   once — it creates the first admin account and then permanently disables
-   itself the moment any staff account exists. From there, sign in at
-   `/dashboard/login` and add any other teammates (including partner
-   accounts) from `/dashboard/team`.
+   once — it creates the platform owner account and then permanently
+   disables itself the moment any staff account exists. You'll then sign in
+   at `/dashboard/login` and be walked through a mandatory one-time
+   two-factor setup (scan a QR code with an authenticator app) before
+   reaching the dashboard — have one ready (Google Authenticator, 1Password,
+   Authy, etc.). This applies to every account, including this first one,
+   with no way to skip it.
 7. **Verify**: submit a test lead through `/sell` or `/buy`, then confirm
    it appears in the Lead Inbox at `/dashboard`.
 
@@ -142,7 +171,30 @@ If you ever redeploy with a fresh Supabase project, re-run steps 2–6.
 
 ## Dashboard roles
 
-`users.role` is one of `admin`, `reviewer`, `acquisitions`, or `partner`.
-Admins can add teammates from `/dashboard/team`; every role except partner
-sees the full Lead Inbox for their organization; partners see only leads
-explicitly routed to them from a lead's detail page.
+Access is a hierarchy, not a flat role list:
+
+- **Platform owner** — the account created by `/dashboard/setup`. Sees and
+  manages every agency, and is the only one who can promote another account
+  to agency admin.
+- **Agencies** — tenants (the `organizations` table). The owner creates
+  these from `/dashboard/agencies`.
+- **Agency admins** — manage their own agency's people and teams from
+  `/dashboard/team` and `/dashboard/teams`: inviting/removing users,
+  setting their view/edit permissions, and creating teams — but cannot
+  grant admin status themselves.
+- **Teams** — an agency admin can group some of an agency's users and
+  customers into a team; a customer assigned to a team is visible only to
+  that team's members, an agency's admins, and the owner. A customer with
+  no team is visible to every agency user who isn't themselves on a team.
+- **Agency users** — regular staff. Each has three independent dials (set
+  by an agency admin or the owner) controlling whether they can *edit*
+  property details, financial details, and contact info for the customers
+  they can see — everyone can always at least view all three.
+- **Partners** — unchanged from before, and orthogonal to all of the above:
+  a partner only ever sees leads explicitly routed to them from a lead's
+  detail page, regardless of team assignment.
+
+New users are added by email invite (`InviteAgencyUserForm` on
+`/dashboard/team`, or `/dashboard/agencies/[id]` for the owner inviting into
+another agency) rather than an admin-set password — see the email template
+setup above.

@@ -2,10 +2,14 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { getLead, listConsentRecordsForLead } from "@/app/actions/staff-leads";
 import { listOrgPartners, listRoutesForLead } from "@/app/actions/partner-routes";
+import { listNotesForLead } from "@/app/actions/lead-notes";
+import { getCurrentStaffProfile } from "@/lib/dashboard/auth";
 import { TypeBadge, UrgencyBadge, IntentBadge, ReviewFlagBadge } from "@/components/dashboard/LeadBadges";
 import { LeadStatusControls } from "@/components/dashboard/LeadStatusControls";
 import { ConsentLog } from "@/components/dashboard/ConsentLog";
 import { StructuredAnswers } from "@/components/dashboard/StructuredAnswers";
+import { ContactDetailsSection } from "@/components/dashboard/ContactDetailsSection";
+import { LeadNotes } from "@/components/dashboard/LeadNotes";
 import { PhotoGallery } from "@/components/dashboard/PhotoGallery";
 import { PartnerAssignment } from "@/components/dashboard/PartnerAssignment";
 
@@ -27,11 +31,17 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
     );
   }
 
-  const [consentRecords, partners, routes] = await Promise.all([
+  const [consentRecords, partners, routes, notes, me] = await Promise.all([
     listConsentRecordsForLead(id),
     listOrgPartners(),
     listRoutesForLead(id),
+    listNotesForLead(id),
+    getCurrentStaffProfile(),
   ]);
+
+  const canEditProperty = me?.isPlatformOwner || me?.isAgencyAdmin || me?.canEditProperty || false;
+  const canEditFinancial = me?.isPlatformOwner || me?.isAgencyAdmin || me?.canEditFinancial || false;
+  const canEditContact = me?.isPlatformOwner || me?.isAgencyAdmin || me?.canEditContact || false;
 
   const structuredAnswers = lead.type === "seller" ? lead.propertyDetails : lead.buyerCriteria;
 
@@ -68,24 +78,17 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             <h2 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
               Contact details
             </h2>
-            <dl className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <dt className="text-sm text-slate-500">Email</dt>
-                <dd className="font-medium text-slate-900">{lead.email || "Not provided"}</dd>
-              </div>
-              <div>
-                <dt className="text-sm text-slate-500">Phone</dt>
-                <dd className="font-medium text-slate-900">{lead.phone || "Not provided"}</dd>
-              </div>
-              <div>
-                <dt className="text-sm text-slate-500">Preferred contact method</dt>
-                <dd className="font-medium text-slate-900 capitalize">{lead.contactPref || "No preference"}</dd>
-              </div>
-              <div>
-                <dt className="text-sm text-slate-500">Submitted</dt>
-                <dd className="font-medium text-slate-900">{new Date(lead.createdAt).toLocaleString()}</dd>
-              </div>
-            </dl>
+            <div className="mt-3">
+              <ContactDetailsSection
+                leadId={lead.id}
+                contactName={lead.contactName}
+                email={lead.email}
+                phone={lead.phone}
+                contactPref={lead.contactPref}
+                createdAt={lead.createdAt}
+                canEditContact={canEditContact}
+              />
+            </div>
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-6">
@@ -93,7 +96,14 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               Transcript & structured answers
             </h2>
             <div className="mt-3">
-              <StructuredAnswers answers={structuredAnswers} transcriptRaw={lead.transcriptRaw} />
+              <StructuredAnswers
+                leadId={lead.id}
+                leadType={lead.type as "seller" | "buyer"}
+                answers={structuredAnswers}
+                transcriptRaw={lead.transcriptRaw}
+                canEditProperty={canEditProperty}
+                canEditFinancial={canEditFinancial}
+              />
             </div>
           </section>
 
@@ -103,6 +113,13 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             </h2>
             <div className="mt-3">
               <PhotoGallery leadId={lead.id} />
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white p-6">
+            <h2 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Notes</h2>
+            <div className="mt-3">
+              <LeadNotes leadId={lead.id} initialNotes={notes} />
             </div>
           </section>
         </div>

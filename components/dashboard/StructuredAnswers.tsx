@@ -1,14 +1,27 @@
+"use client";
+
 import { Mic } from "lucide-react";
 import { humanizeKey, humanizeValue } from "@/lib/dashboard/humanize";
+import { splitByCategory } from "@/lib/dashboard/field-categories";
+import { updateLeadPropertyField, updateLeadFinancialField } from "@/app/actions/lead-fields";
+import { EditableField } from "./EditableField";
 
 export function StructuredAnswers({
+  leadId,
+  leadType,
   answers,
   transcriptRaw,
+  canEditProperty,
+  canEditFinancial,
 }: {
+  leadId: string;
+  leadType: "seller" | "buyer";
   answers: Record<string, unknown>;
   transcriptRaw: string | null;
+  canEditProperty: boolean;
+  canEditFinancial: boolean;
 }) {
-  const entries = Object.entries(answers);
+  const { property, financial } = splitByCategory(leadType, answers);
 
   return (
     <div className="space-y-5">
@@ -23,20 +36,36 @@ export function StructuredAnswers({
       </div>
 
       <div>
-        <h3 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-          Structured answers
-        </h3>
+        <h3 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Property details</h3>
         <dl className="mt-2 divide-y divide-slate-100">
-          {entries.map(([key, value]) => (
-            <div key={key} className="flex items-start justify-between gap-4 py-2.5">
-              <dt className="text-sm text-slate-500">{humanizeKey(key)}</dt>
-              <dd className="text-right text-sm font-medium text-slate-900">
-                {humanizeValue(value)}
-              </dd>
-            </div>
+          {property.map(([key, value]) => (
+            <EditableField
+              key={key}
+              label={humanizeKey(key)}
+              value={humanizeValue(value)}
+              editable={canEditProperty}
+              onSave={(newValue) => updateLeadPropertyField(leadId, key, newValue)}
+            />
           ))}
         </dl>
       </div>
+
+      {financial.length > 0 && (
+        <div>
+          <h3 className="text-xs font-semibold tracking-wide text-slate-500 uppercase">Financial details</h3>
+          <dl className="mt-2 divide-y divide-slate-100">
+            {financial.map(([key, value]) => (
+              <EditableField
+                key={key}
+                label={humanizeKey(key)}
+                value={humanizeValue(value)}
+                editable={canEditFinancial}
+                onSave={(newValue) => updateLeadFinancialField(leadId, key, newValue)}
+              />
+            ))}
+          </dl>
+        </div>
+      )}
     </div>
   );
 }
