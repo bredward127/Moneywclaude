@@ -9,23 +9,37 @@ import {
   type BuyerIntakeInput,
 } from "@/lib/validation/intake";
 
+function saveFailedResponse() {
+  return NextResponse.json(
+    { ok: false, error: "Could not save your submission. Please try again." },
+    { status: 500 }
+  );
+}
+
 async function recordConsent(
   leadId: string,
   request: Request,
   privacyAgreed: boolean,
   marketingOptIn: boolean
 ) {
-  const supabase = getSupabaseServiceClient();
-  const { error } = await supabase.from("consent_records").insert({
-    lead_id: leadId,
-    disclosure_version: DISCLOSURE_VERSION,
-    privacy_agreed: privacyAgreed,
-    marketing_opt_in: marketingOptIn,
-    ip_address: getClientIp(request),
-    user_agent: request.headers.get("user-agent"),
-  });
-  if (error) {
-    console.error("[intake] failed to record consent", error);
+  try {
+    const supabase = getSupabaseServiceClient();
+    const { error } = await supabase.from("consent_records").insert({
+      lead_id: leadId,
+      disclosure_version: DISCLOSURE_VERSION,
+      privacy_agreed: privacyAgreed,
+      marketing_opt_in: marketingOptIn,
+      ip_address: getClientIp(request),
+      user_agent: request.headers.get("user-agent"),
+    });
+    if (error) {
+      console.error("[intake] failed to record consent", error);
+    }
+  } catch (err) {
+    // Best-effort: the lead itself already saved successfully by the time
+    // this runs. Never let a consent-logging failure surface as a failed
+    // submission to the person who just submitted it.
+    console.error("[intake] recordConsent threw", err);
   }
 }
 
@@ -75,68 +89,67 @@ export async function POST(request: Request) {
   }
   const submission = parsed.data;
 
-  if (submission.type === "seller") {
-    const supabase = getSupabaseServiceClient();
-    const row = {
-      org_id: getDefaultOrgId(),
-      type: "seller",
-      status: "submitted",
-      contact_name: submission.contact.fullName,
-      email: submission.contact.email,
-      phone: submission.contact.phone,
-      contact_pref: submission.contact.preferredContact,
-      property_details: sellerPropertyDetails(submission),
-    };
+  try {
+    if (submission.type === "seller") {
+      const supabase = getSupabaseServiceClient();
+      const row = {
+        org_id: getDefaultOrgId(),
+        type: "seller",
+        status: "submitted",
+        contact_name: submission.contact.fullName,
+        email: submission.contact.email,
+        phone: submission.contact.phone,
+        contact_pref: submission.contact.preferredContact,
+        property_details: sellerPropertyDetails(submission),
+      };
 
-    const { data: lead, error } = submission.leadId
-      ? await supabase
-          .from("leads")
-          .update(row)
-          .eq("id", submission.leadId)
-          .eq("type", "seller")
-          .select("id")
-          .single()
-      : await supabase.from("leads").insert(row).select("id").single();
+      const { data: lead, error } = submission.leadId
+        ? await supabase
+            .from("leads")
+            .update(row)
+            .eq("id", submission.leadId)
+            .eq("type", "seller")
+            .select("id")
+            .single()
+        : await supabase.from("leads").insert(row).select("id").single();
 
-    if (error || !lead) {
-      console.error("[intake] failed to persist seller lead", error);
-      return NextResponse.json(
-        { ok: false, error: "Could not save your submission. Please try again." },
-        { status: 500 }
-      );
+      if (error || !lead) {
+        console.error("[intake] failed to persist seller lead", error);
+        return saveFailedResponse();
+      }
+
+      await recordConsent(lead.id as string, request, true, submission.marketingOptIn);
+      return NextResponse.json({ ok: true });
     }
 
-    await recordConsent(lead.id as string, request, true, submission.marketingOptIn);
-    return NextResponse.json({ ok: true });
-  }
+    if (submission.type === "buyer") {
+      const supabase = getSupabaseServiceClient();
+      const row = {
+        org_id: getDefaultOrgId(),
+        type: "buyer",
+        status: "submitted",
+        contact_name: submission.contact.fullName,
+        email: submission.contact.email,
+        phone: submission.contact.phone,
+        contact_pref: submission.contact.preferredContact,
+        buyer_criteria: buyerCriteria(submission),
+      };
 
-  if (submission.type === "buyer") {
-    const supabase = getSupabaseServiceClient();
-    const row = {
-      org_id: getDefaultOrgId(),
-      type: "buyer",
-      status: "submitted",
-      contact_name: submission.contact.fullName,
-      email: submission.contact.email,
-      phone: submission.contact.phone,
-      contact_pref: submission.contact.preferredContact,
-      buyer_criteria: buyerCriteria(submission),
-    };
+      const { data: lead, error } = await supabase.from("leads").insert(row).select("id").single();
 
-    const { data: lead, error } = await supabase.from("leads").insert(row).select("id").single();
+      if (error || !lead) {
+        console.error("[intake] failed to persist buyer lead", error);
+        return saveFailedResponse();
+      }
 
-    if (error || !lead) {
-      console.error("[intake] failed to persist buyer lead", error);
-      return NextResponse.json(
-        { ok: false, error: "Could not save your submission. Please try again." },
-        { status: 500 }
-      );
+      await recordConsent(lead.id as string, request, true, submission.marketingOptIn);
+      return NextResponse.json({ ok: true });
     }
 
-    await recordConsent(lead.id as string, request, true, submission.marketingOptIn);
+    console.log(`[intake] received "${submission.type}" submission`, JSON.stringify(submission));
     return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("[intake] POST handler threw", err);
+    return saveFailedResponse();
   }
-
-  console.log(`[intake] received "${submission.type}" submission`, JSON.stringify(submission));
-  return NextResponse.json({ ok: true });
 }

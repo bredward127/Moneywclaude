@@ -121,20 +121,25 @@ export async function createExecutedDocUploadTicket({
     return { ok: false, error: "You don't have access to this lead." };
   }
 
-  const safeName = filename.replace(/[^a-zA-Z0-9.\-_]/g, "_").slice(-100);
-  const unique = `${Date.now()}-${randomBytes(4).toString("hex")}`;
-  const path = `${leadId}/${unique}-${safeName}`;
+  try {
+    const safeName = filename.replace(/[^a-zA-Z0-9.\-_]/g, "_").slice(-100);
+    const unique = `${Date.now()}-${randomBytes(4).toString("hex")}`;
+    const path = `${leadId}/${unique}-${safeName}`;
 
-  const supabase = getSupabaseServiceClient();
-  const { data, error } = await supabase.storage
-    .from(CONTRACT_DOCUMENTS_BUCKET)
-    .createSignedUploadUrl(path);
+    const supabase = getSupabaseServiceClient();
+    const { data, error } = await supabase.storage
+      .from(CONTRACT_DOCUMENTS_BUCKET)
+      .createSignedUploadUrl(path);
 
-  if (error || !data) {
-    console.error("[contract-packets] failed to create executed doc upload url", error);
+    if (error || !data) {
+      console.error("[contract-packets] failed to create executed doc upload url", error);
+      return { ok: false, error: "Could not start the upload. Please try again." };
+    }
+    return { ok: true, path, token: data.token, signedUrl: data.signedUrl };
+  } catch (err) {
+    console.error("[contract-packets] createExecutedDocUploadTicket threw", err);
     return { ok: false, error: "Could not start the upload. Please try again." };
   }
-  return { ok: true, path, token: data.token, signedUrl: data.signedUrl };
 }
 
 export async function confirmExecutedDocUpload({
@@ -165,14 +170,19 @@ export async function getExecutedDocSignedUrl(
     return { error: "You don't have access to this lead." };
   }
 
-  const supabase = getSupabaseServiceClient();
-  const { data, error } = await supabase.storage
-    .from(CONTRACT_DOCUMENTS_BUCKET)
-    .createSignedUrl(path, SIGNED_VIEW_URL_TTL_SECONDS);
+  try {
+    const supabase = getSupabaseServiceClient();
+    const { data, error } = await supabase.storage
+      .from(CONTRACT_DOCUMENTS_BUCKET)
+      .createSignedUrl(path, SIGNED_VIEW_URL_TTL_SECONDS);
 
-  if (error || !data) {
-    console.error("[contract-packets] failed to create executed doc signed url", error);
+    if (error || !data) {
+      console.error("[contract-packets] failed to create executed doc signed url", error);
+      return { error: "Could not load this document." };
+    }
+    return { url: data.signedUrl };
+  } catch (err) {
+    console.error("[contract-packets] getExecutedDocSignedUrl threw", err);
     return { error: "Could not load this document." };
   }
-  return { url: data.signedUrl };
 }

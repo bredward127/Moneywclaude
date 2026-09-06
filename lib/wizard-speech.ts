@@ -91,7 +91,11 @@ export function useSpeechSynthesis() {
     getServerUnsupportedSnapshot
   );
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  // Opt-out by default: voice prompts stay silent until the person explicitly
+  // asks for guided audio (see AudioOptInPrompt). speak() below already
+  // no-ops while muted, so this default alone is what makes read-aloud
+  // opt-in instead of automatic.
+  const [isMuted, setIsMuted] = useState(true);
 
   const cancel = useCallback(() => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -127,5 +131,13 @@ export function useSpeechSynthesis() {
     });
   }, [cancel]);
 
-  return { isSupported, isSpeaking, isMuted, toggleMuted, speak, cancel };
+  const setMuted = useCallback(
+    (muted: boolean) => {
+      setIsMuted(muted);
+      if (muted) cancel();
+    },
+    [cancel]
+  );
+
+  return { isSupported, isSpeaking, isMuted, toggleMuted, setMuted, speak, cancel };
 }

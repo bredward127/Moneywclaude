@@ -7,6 +7,7 @@ import { ProgressSteps } from "@/components/forms/ProgressSteps";
 import { SuccessPanel } from "@/components/forms/SuccessPanel";
 import { useSpeechRecognition, useSpeechSynthesis } from "@/lib/wizard-speech";
 import { VoiceControlBar } from "./VoiceControlBar";
+import { AudioOptInPrompt } from "./AudioOptInPrompt";
 import { ReviewStep } from "./ReviewStep";
 import {
   buildSellerSteps,
@@ -40,9 +41,15 @@ export function PropertyIntakeWizard({ mode }: { mode: "seller" | "buyer" }) {
   const [visitId, setVisitId] = useState(0);
   const [cameFromReview, setCameFromReview] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
+  const [hasChosenAudio, setHasChosenAudio] = useState(false);
 
   const recognition = useSpeechRecognition();
   const synthesis = useSpeechSynthesis();
+
+  function handleAudioChoice(wantsAudio: boolean) {
+    synthesis.setMuted(!wantsAudio);
+    setHasChosenAudio(true);
+  }
 
   function updateSeller<K extends keyof SellerData>(key: K, value: SellerData[K]) {
     setSellerData((prev) => ({ ...prev, [key]: value }));
@@ -158,6 +165,10 @@ export function PropertyIntakeWizard({ mode }: { mode: "seller" | "buyer" }) {
       <ProgressSteps steps={progressLabels} currentStep={currentStep} />
 
       <div className="mt-8">
+        {!isReview && currentStep === 0 && !hasChosenAudio && synthesis.isSupported && (
+          <AudioOptInPrompt onChoose={handleAudioChoice} />
+        )}
+
         {isReview || !activeStep ? (
           <>
             <div className="flex flex-wrap items-start justify-between gap-4">

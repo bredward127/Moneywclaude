@@ -45,9 +45,9 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Environment variables
 
 Set these in `.env.local` for local development, and in your Vercel
-project's Environment Variables for deployment (see below). All of them are
-required — the app throws a clear error at the point of use if one is
-missing, rather than failing silently.
+project's Environment Variables for deployment (see below). All of them
+except `ANTHROPIC_API_KEY` are required — the app throws a clear error at
+the point of use if one is missing, rather than failing silently.
 
 | Variable | Where to find it | Exposed to browser? |
 | --- | --- | --- |
@@ -56,11 +56,30 @@ missing, rather than failing silently.
 | `SUPABASE_SERVICE_ROLE_KEY` | Same page — the "service_role" secret | **No — never** |
 | `NEXT_PUBLIC_SITE_URL` | Your deployed URL (e.g. `https://your-app.vercel.app`); `http://localhost:3000` locally | Yes |
 | `DEFAULT_ORG_ID` | The `organizations.id` row seeded by the migrations below | No |
+| `ANTHROPIC_API_KEY` | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) — optional | **No — never** |
 
 The anon key is safe to expose: every table and storage bucket has RLS
 enabled, and the anon/authenticated roles have no policies granting them
 direct write access anywhere. The service role key bypasses RLS entirely —
 treat it like a database superuser password.
+
+`ANTHROPIC_API_KEY` is optional and unlocks AI-assisted extraction on the
+seller wizard's "speak your answers" steps (see below) — without it, those
+same steps still work using built-in keyword matching, just without the
+AI's better handling of what wasn't explicitly matched to an option.
+
+### Voice intake: rule-based matching + optional AI
+
+The seller wizard lets people describe their property (or repairs, mortgage,
+and reason for selling) in one freeform sentence instead of answering one
+question at a time. This always works via keyword/word-overlap matching in
+`lib/wizard-extract.ts` — no configuration required. When
+`ANTHROPIC_API_KEY` is set, `app/actions/ai-extract.ts` additionally sends
+the same transcript to Claude (`claude-haiku-4-5-20251001`) with a
+tool-use schema constrained to the wizard's actual option values, and its
+result takes precedence over the keyword match for that utterance. Any
+failure — no key, a network error, a non-200 response — falls back to the
+keyword match silently; the wizard never blocks or errors because of this.
 
 ## Supabase setup
 
@@ -106,6 +125,8 @@ Server Actions and API routes using the service role key.
    - `NEXT_PUBLIC_SITE_URL` (your production Vercel URL, e.g.
      `https://your-app.vercel.app`)
    - `DEFAULT_ORG_ID`
+   - `ANTHROPIC_API_KEY` (optional — mark it sensitive; see
+     [Voice intake](#voice-intake-rule-based-matching--optional-ai) above)
 5. **Deploy.** Vercel builds and deploys automatically on every push to
    your production branch from here on.
 6. **Create the first dashboard admin account**: once deployed, visit
