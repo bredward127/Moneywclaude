@@ -4,6 +4,13 @@ import { getStaffSessionState } from "@/lib/dashboard/auth";
 import { DashboardNav } from "@/components/dashboard/DashboardNav";
 import { signOut } from "@/app/actions/auth";
 
+// Every page under this layout reads the caller's own session and live
+// database state -- never statically prerenderable. Declared explicitly
+// (in addition to cookies() usage naturally forcing this) so a build never
+// attempts to prerender this subtree even if a future refactor changes
+// call order somewhere in that chain.
+export const dynamic = "force-dynamic";
+
 export default async function DashboardAppLayout({ children }: { children: React.ReactNode }) {
   const state = await getStaffSessionState();
 

@@ -13,6 +13,14 @@ import { createServerClient } from "@supabase/ssr";
  * through this client first.
  */
 export async function getSupabaseServerSessionClient() {
+  // Call cookies() before the env-var check, not after: reading a dynamic
+  // API is what tells Next.js this route can't be statically prerendered.
+  // If the config-error throw happened first, a build with a missing env
+  // var would never reach cookies() during the prerender pass, so Next
+  // would try to prerender this route anyway -- turning a per-request 500
+  // into a hard build failure for the whole deployment.
+  const cookieStore = await cookies();
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
@@ -20,8 +28,6 @@ export async function getSupabaseServerSessionClient() {
       "Supabase is not configured: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set."
     );
   }
-
-  const cookieStore = await cookies();
 
   return createServerClient(url, anonKey, {
     cookies: {
