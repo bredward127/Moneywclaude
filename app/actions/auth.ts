@@ -26,7 +26,8 @@ export async function isSetupNeeded(): Promise<boolean> {
 }
 
 /**
- * One-time bootstrap for the very first dashboard admin. Deliberately has no
+ * One-time bootstrap for the very first account -- under the agency/team
+ * model, that's the platform owner, not just an "admin". Deliberately has no
  * auth guard of its own -- its safety comes entirely from the zero-users
  * check below, which makes it permanently inert the moment any staff
  * account exists. The password never passes through anything but the
@@ -72,6 +73,9 @@ export async function bootstrapFirstAdmin({
       org_id: getDefaultOrgId(),
       email: email.trim(),
       role: "admin",
+      is_platform_owner: true,
+      is_agency_admin: true,
+      password_set_at: new Date().toISOString(),
     });
     if (insertError) {
       console.error("[auth] failed to provision first admin profile", insertError);
