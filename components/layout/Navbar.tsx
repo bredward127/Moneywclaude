@@ -10,7 +10,12 @@ const NAV_LINKS = [
   { href: "/sell", label: "Sell" },
   { href: "/buy", label: "Buy" },
   { href: "/how-it-works", label: "How It Works" },
+  { href: "/articles", label: "Resources" },
 ];
+
+function isNavLinkActive(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -23,7 +28,7 @@ export function Navbar() {
 
         <div className="hidden items-center gap-8 md:flex">
           {NAV_LINKS.map((link) => {
-            const isActive = pathname === link.href;
+            const isActive = isNavLinkActive(pathname, link.href);
             return (
               <Link
                 key={link.href}
@@ -68,7 +73,7 @@ export function Navbar() {
         <div className="border-t border-white/10 bg-slate-900 px-4 pt-2 pb-6 md:hidden">
           <div className="flex flex-col gap-1">
             {NAV_LINKS.map((link) => {
-              const isActive = pathname === link.href;
+              const isActive = isNavLinkActive(pathname, link.href);
               return (
                 <Link
                   key={link.href}

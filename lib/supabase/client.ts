@@ -3,7 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 /**
- * Browser Supabase client using only the publishable key. This key is safe to
+ * Browser Supabase client using only the anon key. This key is safe to
  * expose — on its own it cannot read or write anything, since every table and
  * the property-photos bucket have RLS enabled with no anon/authenticated
  * policies. Its only job client-side is completing an upload against a
@@ -11,15 +11,15 @@ import { createClient } from "@supabase/supabase-js";
  */
 export function getSupabaseBrowserClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!url || !publishableKey) {
+  if (!url || !anonKey) {
     throw new Error(
-      "Supabase is not configured: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY must be set."
+      "Supabase is not configured: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set."
     );
   }
 
-  return createClient(url, publishableKey, {
+  return createClient(url, anonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }

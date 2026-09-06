@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
+import { ARTICLES } from "@/lib/articles";
 
 const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
   {
@@ -8,6 +9,16 @@ const COLUMNS: { title: string; links: { href: string; label: string }[] }[] = [
       { href: "/sell", label: "Seller Intake" },
       { href: "/buy", label: "Buyer Intake" },
       { href: "/how-it-works", label: "How It Works" },
+    ],
+  },
+  {
+    title: "Resources",
+    links: [
+      { href: "/articles", label: "All Articles" },
+      ...ARTICLES.map((article) => ({
+        href: `/articles/${article.slug}`,
+        label: article.shortTitle,
+      })),
     ],
   },
   {
@@ -26,7 +37,7 @@ export function Footer() {
   return (
     <footer className="border-t border-white/10 bg-slate-900">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-[1.5fr_1fr_1fr]">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
           <div>
             <Logo />
             <p className="mt-4 max-w-xs text-sm text-slate-400">

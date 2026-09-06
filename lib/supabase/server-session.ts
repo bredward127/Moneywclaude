@@ -14,16 +14,16 @@ import { createServerClient } from "@supabase/ssr";
  */
 export async function getSupabaseServerSessionClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !publishableKey) {
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !anonKey) {
     throw new Error(
-      "Supabase is not configured: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY must be set."
+      "Supabase is not configured: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set."
     );
   }
 
   const cookieStore = await cookies();
 
-  return createServerClient(url, publishableKey, {
+  return createServerClient(url, anonKey, {
     cookies: {
       getAll: () => cookieStore.getAll(),
       setAll: (cookiesToSet) => {
@@ -32,9 +32,9 @@ export async function getSupabaseServerSessionClient() {
             cookieStore.set(name, value, options);
           }
         } catch {
-          // Called from a Server Component that can't set cookies -- the
-          // middleware is responsible for refreshing the session in that
-          // case, matching the standard @supabase/ssr Next.js pattern.
+          // Called from a Server Component that can't set cookies -- proxy.ts
+          // is responsible for refreshing the session in that case, matching
+          // the standard @supabase/ssr Next.js pattern.
         }
       },
     },
