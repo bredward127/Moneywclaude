@@ -20,7 +20,7 @@ export default async function AgencyDetailPage({ params }: { params: Promise<{ o
     );
   }
 
-  const [users, teams] = await Promise.all([listAgencyUsers(orgId), listTeamsForOrg(orgId)]);
+  const [users, teams] = await Promise.all([listAgencyUsers(orgId, { includeMfaStatus: true }), listTeamsForOrg(orgId)]);
 
   return (
     <div className="space-y-6">

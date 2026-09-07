@@ -18,7 +18,7 @@ export default async function TeamPage() {
     );
   }
 
-  const [users, teams] = await Promise.all([listAgencyUsers(), listTeamsForOrg()]);
+  const [users, teams] = await Promise.all([listAgencyUsers(undefined, { includeMfaStatus: true }), listTeamsForOrg()]);
 
   return (
     <div className="space-y-8">

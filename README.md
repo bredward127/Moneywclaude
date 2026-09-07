@@ -198,3 +198,25 @@ New users are added by email invite (`InviteAgencyUserForm` on
 `/dashboard/team`, or `/dashboard/agencies/[id]` for the owner inviting into
 another agency) rather than an admin-set password — see the email template
 setup above.
+
+### Lost authenticator: resetting someone's two-factor
+
+Two-factor is mandatory and has no backup codes, so a lost or wiped phone
+would otherwise lock an account out permanently. Each person on
+`/dashboard/team` (and on `/dashboard/agencies/[id]` for the owner) has a
+**Reset 2FA** control, alongside a badge showing whether they currently have
+an authenticator enrolled. An agency admin can reset anyone in their own
+agency; the owner can reset anyone in any agency. Resetting also works on
+your own row, which is how the owner recovers their own device — there's
+nobody above them to ask.
+
+A reset deletes every enrolled factor and signs the account out of all
+active sessions. The next sign-in lands on the QR-code enrollment step
+again. It does **not** touch their password, and there is no admin-set-password
+path anywhere in this app — a password can only ever be set by the account
+holder from a link emailed to their own inbox — so handing this to an agency
+admin doesn't give them a way to sign in as the person they reset.
+
+One account is deliberately not manageable this way: an agency admin can
+never remove, re-permission, or reset the platform owner, even if they share
+an agency with them.
